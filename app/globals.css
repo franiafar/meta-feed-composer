@@ -72,6 +72,26 @@ input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #f
 .canvas-wrap { min-height: 280px; padding: 20px; display: grid; place-items: center; overflow: auto; background: #eceae7; }
 .canvas-wrap canvas { display: block; max-width: 100%; height: auto; background: white; box-shadow: 0 2px 8px rgba(28, 25, 23, .12); }
 
+.docs-shell { min-height: 100vh; }
+.docs-header { min-height: 64px; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.docs-wordmark { color: var(--text); font-size: 15px; font-weight: 700; text-decoration: none; }
+.docs-content { width: min(1100px, calc(100% - 48px)); margin: 0 auto; padding: 80px 0 64px; }
+.docs-eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.docs-content h1 { max-width: 820px; margin: 0; font-size: clamp(42px, 7vw, 84px); line-height: .98; letter-spacing: -.055em; }
+.docs-intro { max-width: 710px; margin: 24px 0 0; color: #57534e; font-size: clamp(18px, 2.5vw, 24px); line-height: 1.45; }
+.docs-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px; }
+.docs-actions a { min-height: 42px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; }
+.docs-primary { color: #fff; background: var(--accent); border: 1px solid var(--accent); }
+.docs-secondary { color: var(--text); background: var(--surface); border: 1px solid var(--border); }
+.docs-tutorial { margin-top: 84px; }
+.docs-tutorial h2 { margin: 0 0 24px; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.035em; }
+.docs-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.docs-step { min-height: 230px; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.docs-step > span { color: var(--accent); font-size: 12px; font-weight: 800; }
+.docs-step h3 { margin: 44px 0 8px; font-size: 21px; }
+.docs-step p { margin: 0; color: #57534e; font-size: 14px; line-height: 1.6; }
+.docs-note { margin: 24px 0 0; padding: 18px 20px; color: #3f6212; background: #f7fee7; border: 1px solid #d9f99d; border-radius: 10px; font-size: 14px; }
+
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; }
   .controls { border-right: 0; border-bottom: 1px solid var(--border); }
@@ -80,4 +100,9 @@ input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #f
   .brand-copy span, .privacy-note { display: none; }
   .header-actions { gap: 8px; }
   .actions { margin-top: 0; }
+  .docs-header { padding-inline: 16px; }
+  .docs-content { width: min(100% - 32px, 1100px); padding-top: 48px; }
+  .docs-steps { grid-template-columns: 1fr; }
+  .docs-step { min-height: 0; }
+  .docs-step h3 { margin-top: 28px; }
 }
