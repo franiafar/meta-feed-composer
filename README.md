@@ -1,100 +1,95 @@
-# vinext-starter
+# Meta Feed Composer
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+[Open the live tool](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) · Access is available to the DEPT workspace.
 
-## Prerequisites
+## English
 
-- Node.js `>=22.13.0`
+Meta Feed Composer turns Meta preview screenshots into one clean horizontal image containing only the Instagram Feed cards. Paste screenshots directly from the clipboard; the tool identifies the Feed UI, ignores Stories and duplicate clipboard representations, normalizes every card, and exports a PNG.
 
-## Quick Start
+### What it does
 
-```bash
-npm install
-npm run dev
-npm run build
+- Accepts pasted images only—there is no file picker.
+- Detects Instagram Feed automatically in three- or four-preview Meta layouts.
+- Rejects Instagram Stories and Facebook Stories.
+- Removes duplicate clipboard representations with a high-resolution RGB fingerprint.
+- Preserves the original UI inside each detected card.
+- Places every Feed at the same size in one horizontal row.
+- Supports an optional title and manual card reordering.
+- Processes everything locally in the browser; pasted images are not uploaded.
+- Includes a persistent English/Spanish interface.
+
+### Quick tutorial
+
+1. Copy one or more Meta preview screenshots.
+2. Open the [live tool](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) and press `Cmd + V` on macOS or `Ctrl + V` on Windows.
+3. Check the detected Instagram Feed cards. Use the arrows if you want to change their order, or remove a card.
+4. Optionally add a title.
+5. Select **Download PNG**.
+
+You do not need to crop screenshots, choose a panel count, or select a placement. If an image contains no recognizable Instagram Feed, the tool discards it instead of guessing.
+
+### Detection approach
+
+The browser analyzes candidate preview regions at a reduced working resolution. Each region is scored using the structural characteristics of Instagram Feed: a white account header, the image start position, a white CTA and interaction area, and the expected vertical-card proportions. Only high-confidence Feed candidates continue to the composition step.
+
+### Development
+
+Requirements: Node.js `>=22.13.0` and pnpm.
+
+```sh
+pnpm install
+pnpm dev
+pnpm test
+pnpm lint
 ```
 
-This starter does not use `wrangler.jsonc`.
+The main interface is in `app/page.tsx`; the detector is in `lib/feed-detection.mjs`; focused regression tests are under `tests/`.
 
-## Included Shape
+---
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+## Español
 
-## Workspace Auth Headers
+Meta Feed Composer convierte screenshots de previews de Meta en una sola imagen horizontal que contiene únicamente las tarjetas de Instagram Feed. Pegá las capturas directamente desde el portapapeles: la herramienta identifica la UI de Feed, ignora Stories y representaciones duplicadas, normaliza todas las tarjetas y exporta un PNG.
 
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
+### Qué hace
 
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
+- Acepta imágenes pegadas; no usa un selector de archivos.
+- Detecta Instagram Feed automáticamente en layouts de Meta con tres o cuatro previews.
+- Descarta Instagram Stories y Facebook Stories.
+- Elimina representaciones duplicadas del portapapeles con una huella RGB de alta resolución.
+- Conserva la UI original dentro de cada tarjeta detectada.
+- Coloca todos los Feeds con el mismo tamaño en una sola fila horizontal.
+- Permite agregar un título opcional y reordenar las tarjetas.
+- Procesa todo localmente en el navegador; las imágenes pegadas no se suben.
+- Incluye una interfaz persistente en inglés y español.
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+### Tutorial rápido
 
-Treat the full name as optional and fall back to email when it is absent:
+1. Copiá uno o varios screenshots de previews de Meta.
+2. Abrí la [herramienta](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) y presioná `Cmd + V` en macOS o `Ctrl + V` en Windows.
+3. Revisá los Instagram Feed detectados. Usá las flechas para cambiar el orden o quitá una tarjeta.
+4. Si querés, agregá un título.
+5. Elegí **Descargar PNG**.
 
-```tsx
-import { headers } from "next/headers";
+No hace falta recortar las capturas, elegir la cantidad de paneles ni seleccionar un placement. Si una imagen no contiene un Instagram Feed reconocible, la herramienta la descarta en lugar de adivinar.
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+### Cómo funciona la detección
 
-  const displayName = fullName ?? email;
-  // ...
-}
+El navegador analiza posibles regiones de preview en una resolución de trabajo reducida. Cada región recibe un puntaje según la estructura de Instagram Feed: header blanco de la cuenta, posición de inicio de la imagen, área blanca de CTA e interacciones y proporciones esperadas de una tarjeta vertical. Solo los candidatos con alta confianza pasan a la composición final.
+
+### Desarrollo
+
+Requisitos: Node.js `>=22.13.0` y pnpm.
+
+```sh
+pnpm install
+pnpm dev
+pnpm test
+pnpm lint
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+La interfaz principal está en `app/page.tsx`; el detector está en `lib/feed-detection.mjs`; las pruebas de regresión están en `tests/`.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+---
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Made with <3 by Francisco Iafar

@@ -18,9 +18,26 @@ test("renders the clipboard-first Feed composer", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<title>Meta Feed Composer<\/title>/i);
-  assert.match(html, /Pegá tus screenshots acá/);
-  assert.match(html, /Título opcional/);
+  assert.match(html, /Paste your screenshots here/);
+  assert.match(html, /Optional title/);
   assert.match(html, /Instagram Feed/);
+  assert.match(html, /aria-label="Language"/);
+  assert.match(html, />ES<\/button>/);
+  assert.match(html, />EN<\/button>/);
   assert.doesNotMatch(html, /type=["']file["']/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
+test("includes complete English and Spanish interface copy", async () => {
+  const source = await import("node:fs/promises").then(({ readFile }) =>
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  );
+
+  assert.match(source, /Paste your screenshots here/);
+  assert.match(source, /Pegá tus screenshots acá/);
+  assert.match(source, /Download PNG/);
+  assert.match(source, /Descargar PNG/);
+  assert.match(source, /meta-feed-composer-language/);
+  assert.match(source, /window\.navigator\.language/);
+  assert.match(source, /document\.documentElement\.lang =/);
 });

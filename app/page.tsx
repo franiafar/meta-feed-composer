@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { detectFeedCrop } from "@/lib/feed-detection.mjs";
 
 type Crop = {
@@ -23,6 +23,131 @@ type Screenshot = {
   signature: number[];
 };
 
+type Language = "en" | "es";
+
+type Status =
+  | { kind: "waiting" }
+  | { kind: "analyzing" }
+  | { kind: "added"; added: number; discarded: number }
+  | { kind: "notFound" }
+  | { kind: "review" };
+
+type ErrorState =
+  | { kind: "unreadable"; count: number }
+  | { kind: "processing" }
+  | null;
+
+const LANGUAGE_STORAGE_KEY = "meta-feed-composer-language";
+const LANGUAGE_CHANGE_EVENT = "meta-feed-composer-language-change";
+
+const COPY = {
+  en: {
+    tagline: "Paste Meta screenshots and export the Feeds in one row.",
+    privacy: "Images never leave your browser",
+    settingsLabel: "Settings",
+    optionalTitle: "Optional title",
+    titlePlaceholder: "E.g. Back to School",
+    outputFormat: "Output format",
+    outputDescription: "Instagram Feed · one horizontal row · PNG",
+    download: "Download PNG",
+    clear: "Clear all",
+    pasteArea: "Screenshot paste area",
+    pasteHeading: "Paste your screenshots here",
+    pasteHint: "Paste them as they are. The tool finds the Instagram Feed and removes Stories and duplicates.",
+    detectedFeeds: "Detected Feeds",
+    detectedFeed: "Instagram Feed detected",
+    preview: "Preview",
+    horizontalOutput: "Horizontal output",
+    pasteAtLeastOne: "Paste at least one screenshot",
+    moveLeft: "Move left",
+    moveRight: "Move right",
+    remove: "Remove",
+    languageSelector: "Language",
+    statusWaiting: "Waiting for images",
+    statusAnalyzing: "Analyzing…",
+    statusNotFound: "No new Instagram Feed found",
+    statusReview: "Check the pasted images",
+    errorProcessing: "The images could not be processed.",
+  },
+  es: {
+    tagline: "Pegá screenshots de Meta y exportá los Feeds en una fila.",
+    privacy: "Las imágenes no salen de tu navegador",
+    settingsLabel: "Configuración",
+    optionalTitle: "Título opcional",
+    titlePlaceholder: "Ej. Back to School",
+    outputFormat: "Formato de salida",
+    outputDescription: "Instagram Feed · una fila horizontal · PNG",
+    download: "Descargar PNG",
+    clear: "Limpiar todo",
+    pasteArea: "Zona para pegar screenshots",
+    pasteHeading: "Pegá tus screenshots acá",
+    pasteHint: "Pegalos como estén. La herramienta encuentra el Instagram Feed y descarta Stories y duplicados.",
+    detectedFeeds: "Feeds detectados",
+    detectedFeed: "Instagram Feed detectado",
+    preview: "Vista previa",
+    horizontalOutput: "Salida horizontal",
+    pasteAtLeastOne: "Pegá al menos un screenshot",
+    moveLeft: "Mover a la izquierda",
+    moveRight: "Mover a la derecha",
+    remove: "Quitar",
+    languageSelector: "Idioma",
+    statusWaiting: "Esperando imágenes",
+    statusAnalyzing: "Analizando…",
+    statusNotFound: "No encontré un Instagram Feed nuevo",
+    statusReview: "Revisá las imágenes pegadas",
+    errorProcessing: "No se pudieron procesar las imágenes.",
+  },
+} as const;
+
+function getStatusText(language: Language, status: Status) {
+  const copy = COPY[language];
+  if (status.kind === "waiting") return copy.statusWaiting;
+  if (status.kind === "analyzing") return copy.statusAnalyzing;
+  if (status.kind === "notFound") return copy.statusNotFound;
+  if (status.kind === "review") return copy.statusReview;
+  if (language === "en") {
+    const added = `${status.added} Feed${status.added === 1 ? "" : "s"} added`;
+    const discarded = status.discarded
+      ? ` · ${status.discarded} image${status.discarded === 1 ? "" : "s"} discarded`
+      : "";
+    return added + discarded;
+  }
+  const added = `${status.added} Feed${status.added === 1 ? "" : "s"} agregado${status.added === 1 ? "" : "s"}`;
+  const discarded = status.discarded
+    ? ` · ${status.discarded} ${status.discarded === 1 ? "imagen descartada" : "imágenes descartadas"}`
+    : "";
+  return added + discarded;
+}
+
+function getErrorText(language: Language, error: ErrorState) {
+  if (!error) return "";
+  if (error.kind === "processing") return COPY[language].errorProcessing;
+  if (language === "en") {
+    return `${error.count} image${error.count === 1 ? "" : "s"} could not be read.`;
+  }
+  return `${error.count} imagen${error.count === 1 ? " no se pudo leer" : "es no se pudieron leer"}.`;
+}
+
+function getCreativeCount(language: Language, count: number) {
+  if (language === "en") return `${count} creative${count === 1 ? "" : "s"}`;
+  return `${count} creativo${count === 1 ? "" : "s"}`;
+}
+
+function getLanguageSnapshot(): Language {
+  const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  if (savedLanguage === "en" || savedLanguage === "es") return savedLanguage;
+  return window.navigator.language.toLowerCase().startsWith("es") ? "es" : "en";
+}
+
+function subscribeToLanguageChange(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, callback);
+  };
+}
+
 const TARGET_CARD_HEIGHT = 700;
 const TARGET_CARD_WIDTH = 390;
 const OUTPUT_GAP = 28;
@@ -37,7 +162,7 @@ function loadImage(url: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("No se pudo leer la imagen pegada."));
+    image.onerror = () => reject(new Error("IMAGE_READ_FAILED"));
     image.src = url;
   });
 }
@@ -50,7 +175,7 @@ function analyzeImage(image: HTMLImageElement): Crop {
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("Tu navegador no permite analizar imágenes.");
+  if (!context) throw new Error("IMAGE_ANALYSIS_UNAVAILABLE");
   context.drawImage(image, 0, 0, width, height);
   const pixels = context.getImageData(0, 0, width, height).data;
   const crop = detectFeedCrop(pixels, width, height) as Crop;
@@ -149,17 +274,29 @@ function drawComposition(canvas: HTMLCanvasElement, screenshots: Screenshot[], t
 }
 
 export default function Home() {
+  const language = useSyncExternalStore(subscribeToLanguageChange, getLanguageSnapshot, () => "en");
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("Esperando imágenes");
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState<Status>({ kind: "waiting" });
+  const [error, setError] = useState<ErrorState>(null);
   const outputCanvas = useRef<HTMLCanvasElement>(null);
   const screenshotsRef = useRef<Screenshot[]>([]);
+  const copy = COPY[language];
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const changeLanguage = (nextLanguage: Language) => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    document.documentElement.lang = nextLanguage;
+    window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT));
+  };
 
   const addBlobs = useCallback(async (blobs: Blob[]) => {
     if (!blobs.length) return;
-    setError("");
-    setStatus("Analizando…");
+    setError(null);
+    setStatus({ kind: "analyzing" });
     try {
       const results = await Promise.allSettled(
         blobs.map(async (blob) => {
@@ -188,7 +325,7 @@ export default function Home() {
       const processed = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
       const detected = processed.filter((item): item is Screenshot => item !== null);
       const unreadable = results.filter((result) => result.status === "rejected").length;
-      if (unreadable) setError(`${unreadable} imagen${unreadable === 1 ? " no se pudo leer" : "es no se pudieron leer"}.`);
+      if (unreadable) setError({ kind: "unreadable", count: unreadable });
       setScreenshots((current) => {
         const unique: Screenshot[] = [];
         for (const item of detected) {
@@ -201,16 +338,16 @@ export default function Home() {
         const discarded = blobs.length - unique.length;
         queueMicrotask(() => {
           if (unique.length) {
-            setStatus(`${unique.length} Feed${unique.length === 1 ? "" : "s"} agregado${unique.length === 1 ? "" : "s"}${discarded ? ` · ${discarded} imagen${discarded === 1 ? "" : "es"} descartada${discarded === 1 ? "" : "s"}` : ""}`);
+            setStatus({ kind: "added", added: unique.length, discarded });
           } else {
-            setStatus("No encontré un Instagram Feed nuevo");
+            setStatus({ kind: "notFound" });
           }
         });
         return [...current, ...unique];
       });
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No se pudieron procesar las imágenes.");
-      setStatus("Revisá las imágenes pegadas");
+    } catch {
+      setError({ kind: "processing" });
+      setStatus({ kind: "review" });
     }
   }, []);
 
@@ -264,8 +401,8 @@ export default function Home() {
   const clearAll = () => {
     screenshots.forEach((item) => URL.revokeObjectURL(item.sourceUrl));
     setScreenshots([]);
-    setStatus("Esperando imágenes");
-    setError("");
+    setStatus({ kind: "waiting" });
+    setError(null);
   };
 
   const download = () => {
@@ -285,70 +422,92 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="brand-copy">
           <strong>Meta Feed Composer</strong>
-          <span>Pegá screenshots de Meta y exportá los Feeds en una fila.</span>
+          <span>{copy.tagline}</span>
         </div>
-        <span className="privacy-note">Las imágenes no salen de tu navegador</span>
+        <div className="header-actions">
+          <span className="privacy-note">{copy.privacy}</span>
+          <div className="language-selector" role="group" aria-label={copy.languageSelector}>
+            <button
+              aria-pressed={language === "es"}
+              className={language === "es" ? "active" : ""}
+              lang="es"
+              onClick={() => changeLanguage("es")}
+              type="button"
+            >
+              ES
+            </button>
+            <button
+              aria-pressed={language === "en"}
+              className={language === "en" ? "active" : ""}
+              lang="en"
+              onClick={() => changeLanguage("en")}
+              type="button"
+            >
+              EN
+            </button>
+          </div>
+        </div>
       </header>
 
       <section className="workspace">
-        <aside className="controls" aria-label="Configuración">
+        <aside className="controls" aria-label={copy.settingsLabel}>
           <label>
-            Título opcional
+            {copy.optionalTitle}
             <input
               maxLength={80}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Ej. Back to School"
+              placeholder={copy.titlePlaceholder}
               type="text"
               value={title}
             />
           </label>
           <div className="format-note">
-            <strong>Formato de salida</strong>
-            <span>Instagram Feed · una fila horizontal · PNG</span>
+            <strong>{copy.outputFormat}</strong>
+            <span>{copy.outputDescription}</span>
           </div>
           <div className="actions">
             <button className="primary-button" disabled={!screenshots.length} onClick={download}>
-              Descargar PNG
+              {copy.download}
             </button>
             <button className="text-button" disabled={!screenshots.length} onClick={clearAll}>
-              Limpiar todo
+              {copy.clear}
             </button>
           </div>
         </aside>
 
         <div className="stage">
           <div
-            aria-label="Zona para pegar screenshots"
+            aria-label={copy.pasteArea}
             className="paste-zone"
           >
             <div className="paste-key">⌘V</div>
-            <strong>Pegá tus screenshots acá</strong>
-            <p>Pegalos como estén. La herramienta encuentra el Instagram Feed y descarta Stories y duplicados.</p>
-            <span className="paste-status">{status}</span>
-            {error && <span className="error-message">{error}</span>}
+            <strong>{copy.pasteHeading}</strong>
+            <p>{copy.pasteHint}</p>
+            <span className="paste-status" aria-live="polite">{getStatusText(language, status)}</span>
+            {error && <span className="error-message" role="alert">{getErrorText(language, error)}</span>}
           </div>
 
           {screenshots.length > 0 && (
-            <section className="source-panel" aria-label="Feeds detectados">
+            <section className="source-panel" aria-label={copy.detectedFeeds}>
               <div className="panel-heading">
-                <strong>Feeds detectados</strong>
-                <span>{screenshots.length} creativo{screenshots.length === 1 ? "" : "s"}</span>
+                <strong>{copy.detectedFeeds}</strong>
+                <span>{getCreativeCount(language, screenshots.length)}</span>
               </div>
               <div className="source-list">
                 {screenshots.map((item, index) => (
                   <article className="source-card" key={item.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img alt={`Feed detectado ${index + 1}`} src={item.thumbnailUrl} />
+                    <img alt={`${copy.detectedFeed} ${index + 1}`} src={item.thumbnailUrl} />
                     <div className="source-meta">
                       <strong>Feed {index + 1}</strong>
-                      <span className="confidence">Instagram Feed detectado</span>
+                      <span className="confidence">{copy.detectedFeed}</span>
                     </div>
                     <div className="item-actions">
-                      <button disabled={index === 0} onClick={() => moveScreenshot(index, -1)} aria-label="Mover a la izquierda">←</button>
-                      <button disabled={index === screenshots.length - 1} onClick={() => moveScreenshot(index, 1)} aria-label="Mover a la derecha">→</button>
-                      <button onClick={() => removeScreenshot(item.id)}>Quitar</button>
+                      <button disabled={index === 0} onClick={() => moveScreenshot(index, -1)} aria-label={copy.moveLeft}>←</button>
+                      <button disabled={index === screenshots.length - 1} onClick={() => moveScreenshot(index, 1)} aria-label={copy.moveRight}>→</button>
+                      <button onClick={() => removeScreenshot(item.id)}>{copy.remove}</button>
                     </div>
                   </article>
                 ))}
@@ -356,10 +515,10 @@ export default function Home() {
             </section>
           )}
 
-          <section className="preview-panel" aria-label="Vista previa">
+          <section className="preview-panel" aria-label={copy.preview}>
             <div className="panel-heading">
-              <strong>Vista previa</strong>
-              <span>{screenshots.length ? "Salida horizontal" : "Pegá al menos un screenshot"}</span>
+              <strong>{copy.preview}</strong>
+              <span>{screenshots.length ? copy.horizontalOutput : copy.pasteAtLeastOne}</span>
             </div>
             {screenshots.length ? (
               <div className="canvas-wrap">

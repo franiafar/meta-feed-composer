@@ -17,9 +17,16 @@ button, input, select { font: inherit; }
 .app-shell { min-height: 100vh; }
 
 .app-header { min-height: 64px; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.app-header div { display: grid; gap: 2px; }
+.brand-copy { display: grid; gap: 2px; min-width: 0; }
 .app-header strong { font-size: 15px; }
-.app-header div span, .privacy-note { color: var(--muted); font-size: 13px; }
+.brand-copy span, .privacy-note { color: var(--muted); font-size: 13px; }
+.header-actions { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
+.language-selector { height: 32px; display: grid; grid-template-columns: repeat(2, 38px); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.language-selector button { padding: 0; color: var(--muted); background: var(--surface); border: 0; cursor: pointer; font-size: 12px; font-weight: 650; }
+.language-selector button + button { border-left: 1px solid var(--border); }
+.language-selector button:hover { color: var(--text); background: var(--surface-muted); }
+.language-selector button.active { color: #fff; background: #57534e; }
+.language-selector button:focus-visible { position: relative; outline: 2px solid var(--accent); outline-offset: -3px; }
 .workspace { min-height: calc(100vh - 64px); display: grid; grid-template-columns: 248px minmax(0, 1fr); }
 .controls { padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; background: var(--surface); border-right: 1px solid var(--border); }
 .controls > label { display: grid; gap: 8px; font-size: 13px; font-weight: 600; }
@@ -70,6 +77,7 @@ input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #f
   .controls { border-right: 0; border-bottom: 1px solid var(--border); }
   .stage { padding: 16px; }
   .app-header { padding-inline: 16px; }
-  .app-header div span { display: none; }
+  .brand-copy span, .privacy-note { display: none; }
+  .header-actions { gap: 8px; }
   .actions { margin-top: 0; }
 }

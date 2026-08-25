@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Meta Feed Composer",
-  description: "Pegá previews de Meta, recortalos y exportá una fila de Instagram Feeds.",
+  description: "Paste Meta previews, detect Instagram Feed cards automatically, and export one clean horizontal PNG.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
