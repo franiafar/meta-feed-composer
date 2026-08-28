@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 
 type Language = "en" | "es";
@@ -73,7 +72,7 @@ export default function DocsPage() {
   return (
     <main className="docs-shell">
       <header className="docs-header">
-        <Link className="docs-wordmark" href="/">Meta Feed Composer</Link>
+        <a className="docs-wordmark" href="../">Meta Feed Composer</a>
         <div className="language-selector" role="group" aria-label={copy.language}>
           <button aria-pressed={language === "es"} className={language === "es" ? "active" : ""} onClick={() => changeLanguage("es")} type="button">ES</button>
           <button aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => changeLanguage("en")} type="button">EN</button>
@@ -85,8 +84,8 @@ export default function DocsPage() {
         <h1>{copy.title}</h1>
         <p className="docs-intro">{copy.intro}</p>
         <div className="docs-actions">
-          <Link className="docs-primary" href="/">{copy.back}</Link>
-          <a className="docs-secondary" href="/Meta-Feed-Composer-Tutorial.pptx">{copy.deck}</a>
+          <a className="docs-primary" href="../">{copy.back}</a>
+          <a className="docs-secondary" href="../Meta-Feed-Composer-Tutorial.pptx">{copy.deck}</a>
         </div>
 
         <section className="docs-tutorial">

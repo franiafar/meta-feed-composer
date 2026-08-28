@@ -1,6 +1,6 @@
 # Meta Feed Composer
 
-[Open the live tool](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) · Access is available to the DEPT workspace.
+[Open the live tool](https://franiafar.github.io/meta-feed-composer/).
 
 ## English
 
@@ -21,7 +21,7 @@ Meta Feed Composer turns Meta preview screenshots into one clean horizontal imag
 ### Quick tutorial
 
 1. Copy one or more Meta preview screenshots.
-2. Open the [live tool](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) and press `Cmd + V` on macOS or `Ctrl + V` on Windows.
+2. Open the [live tool](https://franiafar.github.io/meta-feed-composer/) and press `Cmd + V` on macOS or `Ctrl + V` on Windows.
 3. Check the detected Instagram Feed cards. Use the arrows if you want to change their order, or remove a card.
 4. Optionally add a title.
 5. Select **Download PNG**.
@@ -66,7 +66,7 @@ Meta Feed Composer convierte screenshots de previews de Meta en una sola imagen 
 ### Tutorial rápido
 
 1. Copiá uno o varios screenshots de previews de Meta.
-2. Abrí la [herramienta](https://meta-feed-composer-fran.dept-7420.chatgpt.site/) y presioná `Cmd + V` en macOS o `Ctrl + V` en Windows.
+2. Abrí la [herramienta](https://franiafar.github.io/meta-feed-composer/) y presioná `Cmd + V` en macOS o `Ctrl + V` en Windows.
 3. Revisá los Instagram Feed detectados. Usá las flechas para cambiar el orden o quitá una tarjeta.
 4. Si querés, agregá un título.
 5. Elegí **Descargar PNG**.
